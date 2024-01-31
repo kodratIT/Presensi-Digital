@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AbsentController;
+use App\Http\Controllers\WEB\AbsentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,3 +20,4 @@ Route::get('/', function () {
 
 // tes absent
 Route::get('/absent-user', [AbsentController::class, 'index'])->name('absent-users');
+Route::get('/profile-user', [AbsentController::class, 'profile'])->name('profile-users');

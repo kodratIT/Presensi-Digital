@@ -9,6 +9,7 @@
 
 <body>
     <a href="{{ route('absent-users') }}">input absent</a>
+    <a href="{{ route('profile-users') }}">profilr qr</a>
 
 </body>
 

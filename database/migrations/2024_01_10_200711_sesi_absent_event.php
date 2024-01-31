@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('events', function (Blueprint $table) {
-            $table->id();
-            $table->string('name_event');
-            $table->date('date_start');
-            $table->date('date_end');
-            $table->string('detail');
+        Schema::create('sesi_absent_events', function (Blueprint $table) {
+            $table->id(); //id absent
+            $table->string('id_event');
+            $table->string('title');
+            $table->date('time_start');
+            $table->date('time_end');
             $table->timestamps();
         });
-        // voluntir event
     }
 
     /**
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('events');
+        Schema::dropIfExists('sesi_absent_events');
     }
 };

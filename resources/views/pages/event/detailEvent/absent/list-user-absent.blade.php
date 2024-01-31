@@ -6,32 +6,31 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1">
    <style>
-      .scan {
-         width: 400px;
-      }
+   .container {
+      display: flex;
+   }
 
-      .container {
-         display: flex;
-      }
+   .main {
+      flex: 1;
+      /* Membuat div ini mengambil sisa ruang secara otomatis */
+      margin-right: 10px;
+      /* Jarak antara div */
+   }
+   </style>
+   <style>
+   .scan {
+      width: 400px;
+   }
 
-      .main {
-         flex: 1;
-         /* Membuat div ini mengambil sisa ruang secara otomatis */
-         margin-right: 10px;
-         /* Jarak antara div */
-      }
+   #reader__scan_region {
+      transform: scaleX(-1);
+   }
 
-      #reader__scan_region {
-         transform: scaleX(-1);
-         /* Pencerminan horizontal */
-      }
+   #input-rfid {
+      opacity: 0;
+   }
 
-      #scanButton {
-         background-color: #3498db;
-         /* Warna biru */
-         color: #fff;
-         /* Warna teks putih */
-      }
+   .
    </style>
 </head>
 
@@ -47,10 +46,11 @@
                <th>input</th>
                <th>data</th>
             </tr>
+            <tbody id="tabel-body"></tbody>
          </table>
       </div>
       <div class="scan">
-         <input type="text" name="nft" id="nftInput" value="" class="none">
+         <input type="text" name="nft" id="input-rfid" value="" autofocus>
          <hr>
          <div id="reader" width="600px"></div>
       </div>
@@ -59,58 +59,102 @@
    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
    <script>
-      const idSesionAbsent = 101;
-      let tabel = document.getElementById('tabel');
+   const idSesionAbsent = 1;
+   const tabelBody = document.getElementById('tabel-body');
+   let dataabsent = <?php echo json_encode($dataAbsent) ?>;
+   dataabsent = dataabsent.absent;
+   loadAbsentData();
 
-      function inputAbsent(input, code) {
-         let newRow = document.createElement('tr');
-
-         // Membuat elemen <td> pertama dengan teks 'scan'
-         let td1 = document.createElement('td');
-         td1.appendChild(document.createTextNode(input));
-
-         // Membuat elemen <td> kedua dengan teks '123'
-         let td2 = document.createElement('td');
-         td2.appendChild(document.createTextNode(code));
-
-         newRow.appendChild(td1);
-         newRow.appendChild(td2);
-
-         // Menambahkan elemen <tr> ke dalam elemen <tbody> tabel
-         tabel.querySelector('tbody').appendChild(newRow);
-      }
-   </script>
-
-   <script>
-      function onScanSuccess(decodedText, decodedResult) {
-         inputAbsent("scan qr", decodedText);
-      }
-      function onScanFailure(error) {
-      }
-
-      let html5QrcodeScanner = new Html5QrcodeScanner(
-         "reader",
-         { fps: 10, qrbox: { width: 250, height: 250 } },
-         false
-      );
-      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-   </script>
-
-   <script>
-      // Dapatkan elemen input
-      const nftInput = document.getElementById('nftInput');
-      let previousInputValue = '';
-      nftInput.addEventListener('input', function () {
-         // Mendapatkan nilai input saat ini
-         const currentInputValue = nftInput.value;
-         setTimeout(function () {
-            if (currentInputValue === nftInput.value && currentInputValue !== previousInputValue) {
-               inputAbsent('nft', currentInputValue);
-               nftInput.value = '';
+   function inputAbsent(input, code) {
+      // Data yang akan dikirim ke API
+      fetch('/api/absent/input', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+               // Tambahkan header lain yang diperlukan, seperti token otorisasi jika diperlukan
+            },
+            body: JSON.stringify({
+               tipe: input,
+               kode: code,
+               sesion: idSesionAbsent
+            })
+         })
+         .then(response => response.json())
+         .then(data => {
+            if (data.success) {
+               addToTable(input, code);
+               console.log('Data berhasil diterima:', data.message);
+               console.log('user : ', data.userData);
+               console.log('absent : ', data.absentData);
+               dataabsent = data.absentData;
+               loadAbsentData()
+            } else {
+               console.error('Gagal mengirim data:', data.message);
+               // alert(data.message)
             }
-         }, 100);
+         })
+         .catch(error => console.error('Error:', error));
+   }
+
+   function addToTable(data) {
+      let newRow = document.createElement('tr');
+      let td1 = document.createElement('td');
+      td1.appendChild(document.createTextNode(data.tipe));
+      let td2 = document.createElement('td');
+      td2.appendChild(document.createTextNode(data.full_name));
+      newRow.appendChild(td1);
+      newRow.appendChild(td2);
+      tabelBody.appendChild(newRow); // Menggunakan tabelBody sebagai target
+   }
+
+   function loadAbsentData() {
+      tabelBody.innerHTML = "";
+      dataabsent.forEach(userAbsent => {
+         addToTable(userAbsent);
       });
+   }
    </script>
+
+
+
+   <script>
+   function onScanSuccess(decodedText, decodedResult) {
+      inputAbsent("qr", decodedText);
+   }
+
+   function onScanFailure(error) {}
+
+   let html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader", {
+         fps: 10,
+         qrbox: {
+            width: 250,
+            height: 250
+         }
+      },
+      false
+   );
+   html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+   </script>
+
+   <script>
+   const rfidInput = document.getElementById('input-rfid');
+   let lastRfidValue = "";
+   // Auto focus ke input RFID setiap 100 milidetik
+   setInterval(function() {
+      rfidInput.focus();
+   }, 100);
+
+   rfidInput.addEventListener('change', function() {
+      if (rfidInput.value !== lastRfidValue) {
+         inputAbsent("nft", rfidInput.value);
+         lastRfidValue = "";
+      }
+      rfidInput.value = "";
+   });
+   </script>
+
+
 </body>
 
 </html>
